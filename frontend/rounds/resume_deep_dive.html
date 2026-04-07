@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skillyn AI — Resume Deep Dive</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection@0.4.1646425229/face_detection.js" crossorigin="anonymous"></script>
+    <style>
+        /* ── LAYOUT ── */
+        .iv-layout { display:grid; grid-template-columns:280px 1fr; gap:1.5rem; max-width:1180px; margin:1.5rem auto; padding:0 1.5rem; align-items:start; }
+        @media(max-width:768px){ .iv-layout{grid-template-columns:1fr;padding:0 1rem;} }
+
+        /* ── WEBCAM PANEL ── */
+        .webcam-panel { display:flex; flex-direction:column; gap:0.85rem; position:sticky; top:5rem; }
+        .wc-card { background:var(--card); border:1px solid var(--border-subtle); border-radius:14px; overflow:hidden; box-shadow:0 2px 10px rgba(0,0,0,0.06); }
+        .wc-header { display:flex; align-items:center; justify-content:space-between; padding:0.6rem 1rem; background:var(--bg2); border-bottom:1px solid var(--border-subtle); }
+        .wc-title { font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; }
+        .wc-feed { position:relative; width:100%; padding-top:75%; background:#1a1f14; overflow:hidden; }
+        #webcam { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; display:none; }
+        .wc-state { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0.5rem; background:#1a1f14; color:rgba(221,229,217,0.7); padding:1rem; text-align:center; }
+        .wc-state-title { font-size:0.82rem; font-weight:600; color:rgba(221,229,217,0.85); }
+        .wc-state-sub { font-size:0.7rem; color:rgba(221,229,217,0.45); line-height:1.5; max-width:180px; }
+        .wc-retry-btn { margin-top:0.4rem; padding:0.4rem 0.9rem; background:rgba(221,229,217,0.1); border:1px solid rgba(221,229,217,0.2); border-radius:8px; color:rgba(221,229,217,0.8); font-size:0.75rem; font-weight:600; cursor:pointer; font-family:inherit; }
+        .wc-overlay { position:absolute; bottom:0; left:0; right:0; display:none; align-items:center; justify-content:space-between; padding:0.5rem 0.75rem; background:linear-gradient(to top,rgba(20,28,14,0.85) 0%,transparent 100%); z-index:2; }
+        .wc-overlay-left { display:flex; align-items:center; gap:0.4rem; }
+        .mic-dot { width:7px; height:7px; border-radius:50%; background:var(--border); flex-shrink:0; transition:background 0.3s,box-shadow 0.3s; }
+        .mic-dot.active { background:var(--success); box-shadow:0 0 7px rgba(46,125,50,0.8); animation:livePulse 1s ease-in-out infinite; }
+        #mic-label { font-size:0.7rem; color:rgba(221,229,217,0.8); font-weight:500; }
+        #live-badge { font-size:0.68rem; font-weight:700; color:var(--success); letter-spacing:0.1em; opacity:0.3; transition:opacity 0.3s; animation:livePulse 2s ease-in-out infinite; }
+        @keyframes livePulse{0%,100%{opacity:1}50%{opacity:0.35}}
+        .wc-warning-toast { position:absolute; top:0.5rem; left:0.5rem; right:0.5rem; color:#fff; font-size:0.75rem; font-weight:600; padding:0.45rem 0.75rem; border-radius:8px; backdrop-filter:blur(4px); z-index:10; pointer-events:none; display:none; }
+
+        /* metrics */
+        .wc-metrics-body { padding:0.75rem 1rem 0.9rem; display:flex; flex-direction:column; gap:0.55rem; }
+        .wc-metrics-header { display:flex; align-items:center; justify-content:space-between; font-size:0.72rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.1rem; }
+        .wc-ws-dot { width:8px; height:8px; border-radius:50%; background:var(--border); transition:background 0.3s,box-shadow 0.3s; }
+        .wc-ws-dot.connecting{background:var(--warning)} .wc-ws-dot.connected{background:var(--success);box-shadow:0 0 6px rgba(46,125,50,0.6)} .wc-ws-dot.disconnected{background:var(--danger)}
+        .wc-metric-row { display:flex; align-items:center; gap:0.5rem; }
+        .wc-metric-label { font-size:0.7rem; color:var(--text-muted); width:76px; flex-shrink:0; font-weight:500; }
+        .wc-bar-track { flex:1; height:5px; background:var(--bg2); border-radius:3px; overflow:hidden; }
+        .wc-bar-fill { height:100%; border-radius:3px; background:var(--primary); width:0%; transition:width 0.7s ease; }
+        .wc-bar-eng{background:var(--success)} .wc-bar-nerv{background:var(--warning)}
+        .wc-metric-val { font-size:0.7rem; color:var(--text); width:26px; text-align:right; font-weight:700; }
+        .wc-posture-row { display:flex; align-items:center; gap:0.5rem; margin-top:0.1rem; }
+        .wc-posture-badge { font-size:0.7rem; font-weight:600; padding:0.18rem 0.6rem; border-radius:20px; background:var(--primary-light); color:var(--primary); transition:all 0.3s; }
+        .wc-posture-badge.ok{background:rgba(46,125,50,0.12);color:var(--success)} .wc-posture-badge.warn{background:rgba(180,83,9,0.12);color:var(--warning)}
+
+        /* violations */
+        .wc-viol-body { padding:0.75rem 1rem 0.9rem; display:flex; flex-direction:column; gap:0.4rem; }
+        .wc-violations-header { display:flex; align-items:center; justify-content:space-between; font-size:0.72rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.15rem; }
+        .viol-total-badge { font-size:0.68rem; font-weight:700; padding:0.15rem 0.55rem; border-radius:20px; background:var(--bg2); color:var(--text-muted); border:1px solid var(--border-subtle); transition:all 0.3s; }
+        .viol-total-badge.has-violations{background:rgba(192,57,43,0.12);color:var(--danger);border-color:rgba(192,57,43,0.3)}
+        .viol-row { display:flex; align-items:center; gap:0.5rem; padding:0.4rem 0.55rem; border-radius:8px; background:var(--card2); border:1px solid var(--border-subtle); transition:background 0.3s,border-color 0.3s; }
+        .viol-row.viol-flash{background:rgba(192,57,43,0.12);border-color:rgba(192,57,43,0.4);animation:violShake 0.4s ease}
+        @keyframes violShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+        .viol-icon{font-size:0.9rem} .viol-label{flex:1;font-size:0.72rem;color:var(--text-muted);font-weight:500} .viol-count{font-size:0.78rem;font-weight:800;color:var(--text);min-width:16px;text-align:right}
+
+        /* voice card */
+        .wc-controls { padding:1rem; display:flex; flex-direction:column; gap:0.7rem; }
+        .wc-section-label { font-size:0.68rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.07em; }
+        .wc-bg-row { display:grid; grid-template-columns:repeat(3,1fr); gap:0.4rem; }
+        .wc-bg-btn { padding:0.45rem 0; background:var(--card2); border:1px solid var(--border-subtle); border-radius:8px; color:var(--text-muted); font-size:0.74rem; font-weight:500; cursor:pointer; transition:all 0.2s; text-align:center; font-family:inherit; }
+        .wc-bg-btn:hover{border-color:var(--primary);color:var(--text);background:var(--primary-light)} .wc-bg-btn.active{background:var(--primary-light);border-color:var(--primary);color:var(--primary);font-weight:700}
+        .wc-divider{height:1px;background:var(--border-subtle);margin:0.1rem 0}
+        .wc-mic-btn { display:flex; align-items:center; justify-content:center; gap:0.5rem; width:100%; padding:0.6rem 1rem; background:var(--primary-light); border:1.5px solid var(--border); border-radius:10px; color:var(--primary); font-size:0.84rem; font-weight:600; cursor:pointer; transition:all 0.2s; font-family:inherit; }
+        .wc-mic-btn:hover{background:rgba(60,77,39,0.14);border-color:var(--primary);transform:translateY(-1px)}
+        .wc-mic-btn.listening{background:rgba(46,125,50,0.1);border-color:var(--success);color:var(--success);animation:micPulse 1.5s ease-in-out infinite}
+        @keyframes micPulse{0%{box-shadow:0 0 0 0 rgba(46,125,50,0.4)}70%{box-shadow:0 0 0 8px rgba(46,125,50,0)}100%{box-shadow:0 0 0 0 rgba(46,125,50,0)}}
+        .wc-mic-btn:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+        .wc-voice-status{font-size:0.68rem;font-weight:700;padding:0.15rem 0.55rem;border-radius:20px;background:var(--bg2);color:var(--text-muted);border:1px solid var(--border-subtle);transition:all 0.3s;letter-spacing:0.05em}
+        .wc-voice-status.live{background:rgba(46,125,50,0.12);color:var(--success);border-color:rgba(46,125,50,0.3);animation:livePulse 1.5s ease-in-out infinite}
+        .wc-waveform{display:flex;align-items:center;gap:2px;height:16px}
+        .wv-bar{display:inline-block;width:3px;height:4px;background:rgba(221,229,217,0.5);border-radius:2px}
+        .wc-waveform.active .wv-bar:nth-child(1){animation:wave 0.9s ease-in-out infinite 0.0s}
+        .wc-waveform.active .wv-bar:nth-child(2){animation:wave 0.9s ease-in-out infinite 0.15s}
+        .wc-waveform.active .wv-bar:nth-child(3){animation:wave 0.9s ease-in-out infinite 0.3s}
+        .wc-waveform.active .wv-bar:nth-child(4){animation:wave 0.9s ease-in-out infinite 0.15s}
+        .wc-waveform.active .wv-bar:nth-child(5){animation:wave 0.9s ease-in-out infinite 0.0s}
+        @keyframes wave{0%,100%{height:3px;background:rgba(46,125,50,0.5)}50%{height:14px;background:rgba(46,125,50,0.9)}}
+
+        /* ── INTERVIEW PANEL ── */
+        .interview-container { min-width:0; display:flex; flex-direction:column; gap:1.2rem; }
+        .progress-bar { height:4px; background:var(--border-subtle); border-radius:2px; overflow:hidden; }
+        .progress-fill { height:100%; background:linear-gradient(90deg,var(--primary-dark),var(--primary)); border-radius:2px; transition:width 0.5s ease; }
+        .question-box { display:flex; gap:1.2rem; align-items:flex-start; }
+        .ai-avatar { font-size:1.5rem; background:var(--primary-light); padding:0.75rem; border-radius:50%; border:1.5px solid var(--border); flex-shrink:0; width:52px; height:52px; display:flex; align-items:center; justify-content:center; }
+        .question-bubble { background:var(--card); border:1px solid var(--border-subtle); border-radius:16px; border-top-left-radius:4px; padding:1.3rem 1.6rem; font-size:1rem; line-height:1.7; flex:1; color:var(--text); box-shadow:0 1px 4px rgba(0,0,0,0.05); }
+        .live-feedback { background:var(--card); border:1px solid var(--border-subtle); border-left:3px solid var(--primary); border-radius:12px; padding:1.3rem; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
+        .live-feedback h4 { margin-bottom:0.8rem; color:var(--text-muted); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.8px; font-weight:700; }
+        .score-pills { display:flex; gap:0.5rem; margin-bottom:0.8rem; flex-wrap:wrap; }
+        .pill { padding:0.3rem 0.85rem; background:var(--primary-light); border:1px solid rgba(26,43,60,0.15); border-radius:20px; font-size:0.82rem; color:var(--primary); font-weight:600; }
+        .answer-box { background:var(--card); border-radius:16px; padding:1.5rem; border:1px solid var(--border-subtle); box-shadow:0 1px 4px rgba(0,0,0,0.04); }
+        .answer-box textarea { min-height:120px; }
+        .answer-actions { display:flex; justify-content:flex-end; margin-top:1rem; gap:1rem; }
+        .btn-end { padding:0.75rem 1.5rem; background:transparent; color:var(--danger); border:1px solid var(--danger); border-radius:8px; font-size:0.9rem; font-weight:600; cursor:pointer; transition:all 0.2s; font-family:inherit; }
+        .btn-end:hover{background:var(--danger);color:#fff}
+        /* TIMER */
+        .answer-timer-bar{display:none;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--border-subtle);border-radius:12px;padding:0.85rem 1.4rem;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+        .answer-timer-bar.active{display:flex}.at-left{display:flex;flex-direction:column;gap:0.15rem}.at-label{font-size:0.78rem;font-weight:600;color:var(--text-muted)}.at-sublabel{font-size:0.7rem;color:var(--text-muted);opacity:0.7}.at-right{display:flex;align-items:center;gap:1rem}.at-time{font-size:2rem;font-weight:800;color:var(--primary);letter-spacing:-1px;min-width:72px;text-align:center;transition:color 0.3s}.at-time.urgent{color:var(--danger);animation:timerPulse 0.5s ease-in-out infinite}@keyframes timerPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}.at-ring{width:48px;height:48px;transform:rotate(-90deg)}.at-ring-bg{fill:none;stroke:var(--border-subtle);stroke-width:4}.at-ring-fill{fill:none;stroke:var(--primary);stroke-width:4;stroke-linecap:round;stroke-dasharray:125.66;stroke-dashoffset:0;transition:stroke-dashoffset 1s linear,stroke 0.3s}.at-pause-btn{padding:0.35rem 0.85rem;background:var(--card2);border:1px solid var(--border-subtle);border-radius:8px;font-size:0.78rem;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:inherit;transition:all 0.2s}.at-pause-btn:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-light)}.at-progress-track{height:3px;background:var(--border-subtle);border-radius:2px;overflow:hidden;margin-top:0.5rem}.at-progress-fill{height:100%;background:var(--primary);border-radius:2px;transition:width 1s linear,background 0.3s}
+            <span id="role-display"></span>
+            <span id="company-display"></span>
+            <span id="question-counter">Question 1 / 10</span>
+        </div>
+    </nav>
+
+    <div class="iv-layout">
+        <!-- LEFT: Webcam -->
+        <div class="webcam-panel">
+            <div class="wc-card">
+                <div class="wc-header">
+                    <div class="wc-title">📷 Live Camera</div>
+                    <span id="live-badge">● LIVE</span>
+                </div>
+                <div class="wc-feed">
+                    <div class="wc-state" id="cam-loading">
+                        <div class="wc-state-title">Starting camera...</div>
+                        <div class="wc-state-sub">Please allow camera access</div>
+                    </div>
+                    <div class="wc-state" id="cam-error" style="display:none">
+                        <div class="wc-state-title">Camera unavailable</div>
+                        <div class="wc-state-sub">Check permissions and try again</div>
+                        <button class="wc-retry-btn" onclick="retryCamera()">↺ Retry</button>
+                    </div>
+                    <video id="webcam" autoplay muted playsinline></video>
+                    <div class="wc-warning-toast" id="wc-warning"></div>
+                    <div class="wc-overlay" id="wc-overlay">
+                        <div class="wc-overlay-left">
+                            <div class="mic-dot" id="mic-dot"></div>
+                            <span id="mic-label">Mic off</span>
+                        </div>
+                        <div class="wc-waveform" id="wc-waveform">
+                            <span class="wv-bar"></span><span class="wv-bar"></span><span class="wv-bar"></span><span class="wv-bar"></span><span class="wv-bar"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Metrics -->
+            <div class="wc-card">
+                <div class="wc-header">
+                    <div class="wc-title">📊 Live Metrics</div>
+                    <div class="wc-ws-dot connecting" id="wc-ws-dot"></div>
+                </div>
+                <div class="wc-metrics-body">
+                    <div class="wc-metric-row">
+                        <span class="wc-metric-label">Confidence</span>
+                        <div class="wc-bar-track"><div class="wc-bar-fill" id="bar-confidence"></div></div>
+                        <span class="wc-metric-val" id="val-confidence">—</span>
+                    </div>
+                    <div class="wc-metric-row">
+                        <span class="wc-metric-label">Engagement</span>
+                        <div class="wc-bar-track"><div class="wc-bar-fill wc-bar-eng" id="bar-engagement"></div></div>
+                        <span class="wc-metric-val" id="val-engagement">—</span>
+                    </div>
+                    <div class="wc-metric-row">
+                        <span class="wc-metric-label">Nervousness</span>
+                        <div class="wc-bar-track"><div class="wc-bar-fill wc-bar-nerv" id="bar-nervousness"></div></div>
+                        <span class="wc-metric-val" id="val-nervousness">—</span>
+                    </div>
+                    <div class="wc-posture-row">
+                        <span style="font-size:0.7rem;color:var(--text-muted)">Posture:</span>
+                        <span class="wc-posture-badge" id="posture-badge">Detecting...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Violations -->
+            <div class="wc-card">
+                <div class="wc-header">
+                    <div class="wc-title">🚨 Violations</div>
+                    <span class="viol-total-badge" id="viol-total">0</span>
+                </div>
+                <div class="wc-viol-body">
+                    <div class="viol-row" id="viol-row-extra_person"><span class="viol-icon">👥</span><span class="viol-label">Extra person</span><span class="viol-count" id="viol-extra_person">0</span></div>
+                    <div class="viol-row" id="viol-row-device"><span class="viol-icon">📱</span><span class="viol-label">Device detected</span><span class="viol-count" id="viol-device">0</span></div>
+                    <div class="viol-row" id="viol-row-face_turned"><span class="viol-icon">👀</span><span class="viol-label">Face turned</span><span class="viol-count" id="viol-face_turned">0</span></div>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="wc-card">
+                <div class="wc-controls">
+                    <div class="wc-section-label">Background</div>
+                    <div class="wc-bg-row">
+                        <button class="wc-bg-btn active" onclick="setBg('none',this)">Normal</button>
+                        <button class="wc-bg-btn" onclick="setBg('blur',this)">Blur</button>
+                        <button class="wc-bg-btn" onclick="setBg('office',this)">Office</button>
+                    </div>
+                    <div class="wc-divider"></div>
+                    <button class="wc-mic-btn" id="mic-btn" onclick="toggleMic()">
+                        <span>🎙️</span>
+                        <span id="mic-btn-text">Start Speaking</span>
+                        <span class="wc-voice-status" id="voice-status-badge">Off</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: Interview -->
+        <div class="interview-container">
+            <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:5%"></div></div>
+
+            <div class="answer-timer-bar" id="answer-timer-bar"><div class="at-left"><span class="at-label">Answer Timer</span><span class="at-sublabel" id="at-sublabel">60s per question</span><div class="at-progress-track"><div class="at-progress-fill" id="at-progress-fill" style="width:100%"></div></div></div><div class="at-right"><button class="at-pause-btn" id="at-pause-btn" onclick="toggleTimerPause()">Pause</button><span class="at-time" id="at-time">60s</span><svg class="at-ring" viewBox="0 0 48 48"><circle class="at-ring-bg" cx="24" cy="24" r="20"/><circle class="at-ring-fill" id="at-ring" cx="24" cy="24" r="20"/></svg></div></div>
+
+            <div class="question-box">
+                <div class="ai-avatar">RD</div>
+                <div class="question-bubble" id="question-text">Loading your resume deep dive...</div>
+            </div>
+
+            <div class="live-feedback" id="live-feedback" style="display:none">
+                <h4>Previous Answer Feedback</h4>
+                <div class="score-pills">
+                    <span class="pill" id="sbr-pill">SBR: —</span>
+                    <span class="pill" id="confidence-pill">Confidence: —</span>
+                    <span class="pill" id="clarity-pill">Clarity: —</span>
+                </div>
+                <p id="feedback-text" style="font-size:0.9rem;color:var(--text-soft);line-height:1.6"></p>
+                <p id="missing-sbr" style="color:var(--warning);font-size:0.85rem;margin-top:0.4rem"></p>
+            </div>
+
+            <div class="answer-box">
+                <textarea id="answer-input" placeholder="Speak your answer using the mic, or type here..."></textarea>
+                <div class="answer-actions">
+                    <button class="btn-end" onclick="completeInterview()">End Round</button>
+                    <button class="btn-primary" id="submit-btn" onclick="submitAnswer()" style="width:auto;padding:0.85rem 2rem">Submit Answer →</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/rounds/round.js"></script>
+</body>
+</html>

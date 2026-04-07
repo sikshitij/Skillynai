@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skillyn AI — Your AI Interview Coach</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="split-screen">
+
+        <!-- ── LEFT: Branding (permanent, never changes) ── -->
+        <div class="split-left">
+            <div class="split-left__inner">
+                <div class="split-left__logo">
+                    <svg width="64" height="64" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="32" height="32" rx="8" fill="#3C4D27"/>
+                        <path d="M16 6 C16 6 10 10 10 16 C10 20 12 22 14 23 L14 26 L18 26 L18 23 C20 22 22 20 22 16 C22 10 16 6 16 6Z" fill="#DDE5D9"/>
+                        <path d="M13 17 C13 17 14 20 16 21 C18 20 19 17 19 17" stroke="#3C4D27" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+                    </svg>
+                </div>
+                <h1 class="brand-heading">Skillyn&nbsp;AI</h1>
+                <p class="brand-tagline">Because Every Student Deserves<br>a Fair Shot at Their Dream Job</p>
+            </div>
+        </div>
+
+        <!-- ── RIGHT: Form ── -->
+        <div class="split-right">
+            <div class="split-right__inner">
+
+                <div class="auth-card">
+                    <h2 class="welcome-heading">Welcome</h2>
+
+                    <!-- Tab switcher — outside form-body so it never re-renders -->
+                    <div class="tab-buttons">
+                        <button class="tab-btn active" id="tab-login" onclick="showTab('login')">Sign In</button>
+                        <button class="tab-btn" id="tab-register" onclick="showTab('register')">Register</button>
+                    </div>
+
+                    <!-- Single container — only its innerHTML swaps -->
+                    <div id="form-body" class="form-body"></div>
+
+                    <p id="auth-message" class="message"></p>
+                </div>
+
+                <!-- Trust Bar -->
+                <div class="trust-bar">
+                    <p>Trusted for interviews at</p>
+                    <div class="trust-logos">
+                        <div class="trust-logo" style="--brand-color:#FF9900;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M13.958 10.09c0 1.232.029 2.256-.591 3.351-.502.891-1.301 1.438-2.186 1.438-1.214 0-1.922-.924-1.922-2.292 0-2.692 2.415-3.182 4.699-3.182v.685zm3.186 7.705c-.209.189-.512.201-.745.074-1.047-.872-1.234-1.276-1.814-2.106-1.734 1.767-2.962 2.297-5.209 2.297-2.66 0-4.731-1.641-4.731-4.925 0-2.565 1.391-4.309 3.37-5.164 1.715-.754 4.11-.891 5.942-1.095v-.41c0-.753.06-1.642-.384-2.294-.385-.579-1.124-.82-1.775-.82-1.205 0-2.277.618-2.54 1.897-.054.285-.261.567-.549.582l-3.061-.333c-.259-.056-.548-.266-.472-.66C5.97 1.866 8.928 1 11.57 1c1.347 0 3.107.358 4.168 1.378C16.928 3.608 16.8 5.258 16.8 7.044v4.753c0 1.427.592 2.056 1.151 2.828.196.274.239.601-.01.805l-1.797 1.365zm3.755 3.44C19.309 22.773 16.669 24 14.289 24c-3.244 0-6.154-1.199-8.354-3.195-.173-.156-.019-.369.19-.248 2.378 1.383 5.314 2.213 8.347 2.213 2.048 0 4.298-.425 6.368-1.303.312-.133.574.205.259.468zm.74-2.131c-.237-.304-1.567-.144-2.165-.072-.181.022-.209-.136-.046-.25 1.061-.745 2.802-.53 3.004-.28.203.252-.053 1.997-1.051 2.831-.153.128-.299.06-.231-.109.224-.559.727-1.816.489-2.12z" fill="currentColor"/>
+                            </svg>
+                            <span>Amazon</span>
+                        </div>
+                        <div class="trust-logo">
+                            <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" class="google-path"/>
+                                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" class="google-path"/>
+                                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" class="google-path"/>
+                                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" class="google-path"/>
+                            </svg>
+                            <span>Google</span>
+                        </div>
+                        <div class="trust-logo">
+                            <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M11.4 2H2v9.4h9.4V2z" fill="#F25022" class="ms-path"/>
+                                <path d="M22 2h-9.4v9.4H22V2z" fill="#7FBA00" class="ms-path"/>
+                                <path d="M11.4 12.6H2V22h9.4v-9.4z" fill="#00A4EF" class="ms-path"/>
+                                <path d="M22 12.6h-9.4V22H22v-9.4z" fill="#FFB900" class="ms-path"/>
+                            </svg>
+                            <span>Microsoft</span>
+                        </div>
+                    </div>
+                </div>
+
+                <footer class="auth-footer">
+                    © 2026 Skillyn AI &nbsp;|&nbsp; Built for NextGen Hackathon &nbsp;|&nbsp; <a href="#">Privacy Policy</a>
+                </footer>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+    <script>
+        /* ── Form templates ─────────────────────────── */
+        const GOOGLE_SVG = `<svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+            <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+            <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
+            <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+            <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+        </svg>`
+
+        const EYE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+        </svg>`
+
+        const FORMS = {
+            login: `
+                <form onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label for="login-email">Email Address</label>
+                        <input type="email" id="login-email" placeholder="you@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" placeholder="Enter your password" required>
+                    </div>
+                    <div class="forgot-link"><a href="#">Forgot Password?</a></div>
+                    <button type="submit" class="btn-primary">Sign In</button>
+                    <div class="auth-divider">or continue with</div>
+                    <button type="button" class="btn-google" onclick="handleGoogleSignIn()">
+                        ${GOOGLE_SVG} Sign in with Google
+                    </button>
+                </form>`,
+
+            register: `
+                <form onsubmit="handleRegister(event)">
+                    <div class="form-group">
+                        <label for="reg-name">Full Name</label>
+                        <input type="text" id="reg-name" placeholder="Your full name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-email">Email Address</label>
+                        <input type="email" id="reg-email" placeholder="you@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-password">Password</label>
+                        <div class="input-password-wrap">
+                            <input type="password" id="reg-password" placeholder="Create a strong password" required oninput="updateStrength(this.value)">
+                            <button type="button" class="eye-toggle" onclick="togglePassword('reg-password',this)" aria-label="Toggle password">${EYE_SVG}</button>
+                        </div>
+                        <div class="strength-bar">
+                            <div class="strength-seg" id="seg1"></div>
+                            <div class="strength-seg" id="seg2"></div>
+                            <div class="strength-seg" id="seg3"></div>
+                        </div>
+                        <span class="strength-label" id="strength-label"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-confirm">Confirm Password</label>
+                        <div class="input-password-wrap">
+                            <input type="password" id="reg-confirm" placeholder="Re-enter your password" required>
+                            <button type="button" class="eye-toggle" onclick="togglePassword('reg-confirm',this)" aria-label="Toggle password">${EYE_SVG}</button>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary">CREATE ACCOUNT</button>
+                    <div class="auth-divider">or continue with</div>
+                    <button type="button" class="btn-google" onclick="handleGoogleSignIn()">
+                        ${GOOGLE_SVG} Sign up with Google
+                    </button>
+                </form>`
+        }
+
+        /* ── Tab switcher with fade ──────────────────── */
+        function showTab(tab) {
+            const body = document.getElementById('form-body')
+            document.getElementById('tab-login').classList.toggle('active', tab === 'login')
+            document.getElementById('tab-register').classList.toggle('active', tab === 'register')
+            document.getElementById('auth-message').textContent = ''
+
+            body.classList.remove('form-fade-in')
+            // Force reflow so re-adding the class triggers the animation
+            void body.offsetWidth
+            body.innerHTML = FORMS[tab]
+            body.classList.add('form-fade-in')
+        }
+
+        /* ── Password toggle ─────────────────────────── */
+        function togglePassword(inputId, btn) {
+            const input = document.getElementById(inputId)
+            const isHidden = input.type === 'password'
+            input.type = isHidden ? 'text' : 'password'
+            btn.querySelector('svg').innerHTML = isHidden
+                ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/><circle cx="12" cy="12" r="3"/>'
+                : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'
+        }
+
+        /* ── Password strength ───────────────────────── */
+        function updateStrength(val) {
+            const segs = [document.getElementById('seg1'), document.getElementById('seg2'), document.getElementById('seg3')]
+            const label = document.getElementById('strength-label')
+            let score = 0
+            if (val.length >= 8) score++
+            if (/[A-Z]/.test(val) && /[0-9]/.test(val)) score++
+            if (/[^A-Za-z0-9]/.test(val) && val.length >= 12) score++
+            const colors = ['', '#E05252', '#D4A017', '#3C4D27']
+            const labels = ['', 'Weak', 'Medium', 'Strong']
+            const labelColors = ['', '#E05252', '#B45309', '#3C4D27']
+            segs.forEach((s, i) => { s.style.background = i < score ? colors[score] : '#D4DCCE' })
+            label.textContent = val.length ? labels[score] || 'Weak' : ''
+            label.style.color = val.length ? (labelColors[score] || '#E05252') : 'transparent'
+        }
+
+        /* ── Page transition ─────────────────────────── */
+        function navigateTo(url) {
+            document.body.classList.add('page-exit')
+            setTimeout(() => { window.location.href = url }, 500)
+        }
+
+        /* ── Boot: render login form on load ─────────── */
+        showTab('login')
+    </script>
+</body>
+</html>
