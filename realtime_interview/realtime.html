@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skillyn AI — Real-Time Interview</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .rt-layout {
+            max-width: 1150px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        /* ── LEFT PANEL ── */
+        .webcam-panel { display: flex; flex-direction: column; gap: 1rem; }
+
+        #webcam {
+            width: 100%;
+            aspect-ratio: 4/3;
+            object-fit: cover;
+            border-radius: 14px;
+            border: 2px solid rgba(108,99,255,0.4);
+            background: #000;
+            display: block;
+        }
+
+        #cam-error { color: var(--danger); font-size: 0.82rem; display: none; margin-top: 0.3rem; }
+
+        .emotion-card {
+            background: var(--card);
+            border: 1px solid rgba(108,99,255,0.2);
+            border-radius: 12px;
+            padding: 1rem 1.2rem;
+        }
+
+        .emotion-card h4 { color: var(--primary); font-size: 0.88rem; margin-bottom: 0.9rem; }
+
+        .em-row {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 0.55rem;
+            font-size: 0.82rem;
+        }
+
+        .em-label { color: var(--text-muted); width: 85px; flex-shrink: 0; }
+
+        .em-track {
+            flex: 1;
+            height: 5px;
+            background: rgba(255,255,255,0.07);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .em-fill {
+            height: 100%;
+            border-radius: 3px;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.7s ease;
+        }
+
+        .em-val { color: var(--text); width: 28px; text-align: right; font-size: 0.8rem; }
+
+        .posture-row {
+            margin-top: 0.7rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .posture-badge {
+            padding: 0.2rem 0.7rem;
+            border-radius: 20px;
+            background: rgba(108,99,255,0.15);
+            color: var(--primary);
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+
+        /* ── RIGHT PANEL ── */
+        .interview-panel { display: flex; flex-direction: column; gap: 1rem; }
+
+        .voice-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            background: var(--card);
+            border: 1px solid rgba(108,99,255,0.2);
+            border-radius: 10px;
+            padding: 0.7rem 1.1rem;
+            font-size: 0.88rem;
+        }
+
+        .mic-dot {
+            width: 11px; height: 11px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            flex-shrink: 0;
+            transition: background 0.3s;
+        }
+        .mic-dot.listening  { background: var(--success); animation: blink 1s infinite; }
+        .mic-dot.processing { background: var(--warning); }
+
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+        #transcript-box {
+            background: var(--card2);
+            border: 1px solid rgba(108,99,255,0.15);
+            border-radius: 10px;
+            padding: 0.9rem 1rem;
+            min-height: 72px;
+            font-size: 0.92rem;
+            color: var(--text-muted);
+            font-style: italic;
+            line-height: 1.5;
+        }
+
+        .rt-actions { display: flex; gap: 0.8rem; }
+        .rt-actions .btn-primary  { flex: 1; }
+        .rt-actions .btn-secondary {
+            flex: 1;
+            padding: 0.85rem 1rem;
+            background: rgba(108,99,255,0.12);
+            color: var(--primary);
+            border: 1px solid rgba(108,99,255,0.35);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .rt-actions .btn-secondary:hover { background: rgba(108,99,255,0.25); }
+        .rt-actions .btn-secondary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+        .btn-end {
+            padding: 0.75rem;
+            background: transparent;
+            color: var(--danger);
+            border: 1px solid var(--danger);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        .btn-end:hover { background: var(--danger); color: #fff; }
+
+        @media (max-width: 780px) {
+            .rt-layout { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h1 class="logo">Skillyn <span>AI</span></h1>
+        <div class="interview-info">
+            <span id="role-display"></span>
+            <span id="company-display"></span>
+            <span id="question-counter">Question 1/10</span>
+        </div>
+    </nav>
+
+    <div class="rt-layout">
+
+        <!-- LEFT: Webcam + Emotion -->
+        <div class="webcam-panel">
+            <video id="webcam" autoplay muted playsinline></video>
+            <p id="cam-error">⚠️ Camera access denied — emotion analysis disabled.</p>
+
+            <div class="emotion-card">
+                <h4>🎭 Live Emotion Analysis</h4>
+                <div class="em-row">
+                    <span class="em-label">Confidence</span>
+                    <div class="em-track"><div class="em-fill" id="em-conf"></div></div>
+                    <span class="em-val" id="em-conf-val">—</span>
+                </div>
+                <div class="em-row">
+                    <span class="em-label">Nervousness</span>
+                    <div class="em-track"><div class="em-fill" id="em-nerv"></div></div>
+                    <span class="em-val" id="em-nerv-val">—</span>
+                </div>
+                <div class="em-row">
+                    <span class="em-label">Engagement</span>
+                    <div class="em-track"><div class="em-fill" id="em-eng"></div></div>
+                    <span class="em-val" id="em-eng-val">—</span>
+                </div>
+                <div class="posture-row">
+                    Posture: <span class="posture-badge" id="posture-label">Detecting...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: Interview -->
+        <div class="interview-panel">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill" style="width:10%"></div>
+            </div>
+
+            <div class="question-box">
+                <div class="ai-avatar">🤖</div>
+                <div class="question-bubble" id="question-text">
+                    Loading your personalized interview...
+                </div>
+            </div>
+
+            <div class="live-feedback" id="live-feedback" style="display:none">
+                <h4>Previous Answer Feedback:</h4>
+                <div class="score-pills">
+                    <span class="pill" id="sbr-pill">SBR: —</span>
+                    <span class="pill" id="confidence-pill">Confidence: —</span>
+                    <span class="pill" id="clarity-pill">Clarity: —</span>
+                    <span class="pill" id="emotion-pill">Emotion: —</span>
+                </div>
+                <p id="feedback-text"></p>
+                <p id="missing-sbr" class="warning"></p>
+            </div>
+
+            <div class="voice-bar">
+                <div class="mic-dot" id="mic-dot"></div>
+                <span id="voice-status">Click "Start Speaking" to answer</span>
+            </div>
+
+            <div id="transcript-box">Your spoken answer will appear here...</div>
+
+            <div class="rt-actions">
+                <button class="btn-secondary" id="mic-btn" onclick="toggleMic()">🎙️ Start Speaking</button>
+                <button class="btn-primary"   id="submit-btn" onclick="submitAnswer()" disabled>Submit Answer →</button>
+            </div>
+
+            <button class="btn-end" onclick="endInterview()">✕ End Interview</button>
+        </div>
+    </div>
+
+    <script src="/realtime_interview/realtime.js"></script>
+</body>
+</html>
